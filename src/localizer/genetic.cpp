@@ -3,7 +3,23 @@
 #include <iostream>
 #include <chrono>
 
+// #include "rclcpp/rclcpp.hpp"
+// #include "std_msgs/msg/int16_multi_array.hpp"
+
 #define PI 3.141592f
+
+// class Subscriber: public rclcpp::Node{
+//     public:
+//         Subscriber() : Node("subscriber"){
+//             subscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&Subscriber::callback, this, std::placeholders::_1));
+//         }
+//     private:
+//         void callback(const std_msgs::msg::Int16MultiArray & msg) const {
+
+//         }
+//         rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr subscription_;
+// };
+
 
 struct individual{
     float x;
@@ -18,7 +34,7 @@ float CROSSOVER_RATE = 0.7f;
 float MUTATION_RATE = 0.2f;
 
 float LINEAR_MUTATION_STD_DEV = 30.0f;
-float POLAR_MUTATION_STD_DEV = 15.0f;
+float POLAR_MUTATION_STD_DEV = 0.25f;
 
 int MAX_GENERATIONS = 100;
 int POPULATION_SIZE = 100;
@@ -831,11 +847,12 @@ int searchSpaceMinX = 0;
 int searchSpaceMaxX = 400;
 int searchSpaceMinY = 0;
 int searchSpaceMaxY = 600;
+float searchSpaceMinTheta = -PI;
+float searchSpaceMaxTheta = PI;
 
 std::default_random_engine generator;
 
 std::uniform_real_distribution<float> normalized(0.0f, 1.0f);
-std::uniform_real_distribution<float> negativeNormalized(-1.0f, 1.0f);
 
 std::uniform_int_distribution<int> populationSize(0, POPULATION_SIZE-1);
 
@@ -846,7 +863,7 @@ void initPopulation(int length, individual population[]){
     for(int i = 0; i < length; i++){
         population[i].x = searchSpaceMinX + normalized(generator) * (searchSpaceMaxX - searchSpaceMinX);
         population[i].y = searchSpaceMinY + normalized(generator) * (searchSpaceMaxY - searchSpaceMinY);
-        population[i].theta = normalized(generator) * 360.0f;
+        population[i].theta = searchSpaceMinTheta + normalized(generator) * (searchSpaceMaxTheta - searchSpaceMinTheta);
     }
 }
 
@@ -886,15 +903,17 @@ void mutate(individual* indi){
     indi->y = (indi->y<searchSpaceMinY)? searchSpaceMinY: indi->y;
 
     indi->theta += polarMutation(generator);
+    indi->theta = (indi->theta>searchSpaceMaxTheta)? searchSpaceMaxTheta: indi->theta;
+    indi->theta = (indi->theta<searchSpaceMinTheta)? searchSpaceMinTheta: indi->theta;
+
     return;
 }
 
 float getFitness(individual* indi, int numPoints, int inputData[][2]){
     int newX, newY, sum = 0;
-    float rad = indi->theta * PI/180.0f;
     for(int i = 0; i < numPoints; i++){
-        newX = (((float)inputData[i][0])*std::cos(rad)) - (((float)inputData[i][1])*std::sin(rad)) + indi->x;
-        newY = (((float)inputData[i][0])*std::sin(rad)) + (((float)inputData[i][1])*std::cos(rad)) + indi->y;
+        newX = (((float)inputData[i][0])*std::cos(indi->theta)) - (((float)inputData[i][1])*std::sin(indi->theta)) + indi->x;
+        newY = (((float)inputData[i][0])*std::sin(indi->theta)) + (((float)inputData[i][1])*std::cos(indi->theta)) + indi->y;
         if(newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) continue;
         sum += map[newX][newY];
     }
