@@ -10,6 +10,8 @@
 
 #define PI 3.141592f
 
+void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData, int &xOut, int &yOut, float &thetaOut);
+
 class Subscriber: public rclcpp::Node{
     public:
         Subscriber() : Node("subscriber"){
@@ -78,8 +80,8 @@ float MUTATION_RATE = 0.2f;
 float LINEAR_MUTATION_STD_DEV = 30.0f;
 float POLAR_MUTATION_STD_DEV = 0.25f;
 
-int MAX_GENERATIONS = 100;
-int POPULATION_SIZE = 100;
+const int MAX_GENERATIONS = 100;
+const int POPULATION_SIZE = 100;
 float EARLY_BREAK_THRESHOLD = 0.95;
 
 const int map[MAP_WIDTH][MAP_HEIGHT] = {
