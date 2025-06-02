@@ -123,9 +123,9 @@ def skeletonizer():
         cv2.imwrite(f'dotted_grid_{spacing}.png', dotted)
         white_arr = np.where(dotted == 255)
         # print(white_arr)
-        x_arr= white_arr[1]
-        y_arr= white_arr[0]
-        flattened_arr = np.stack((x_arr, y_arr), axis=1).flatten().astype(np.int16).tolist()
+        x_arr= white_arr[1] - 600
+        y_arr= white_arr[0] - 400
+        flattened_arr = np.stack((y_arr, x_arr), axis=1).flatten().astype(np.int16).tolist()
         # print(flattened_arr)
         # Visualize results
         visualize_results(original, thinned, dotted)
@@ -156,6 +156,8 @@ class Pixelator(Node):
         self.publisher1.publish(msg1)
 
         msg2 = Int16MultiArray()
+        # y_min, y_max, x_min, x_max, theta_min, theta_max
+        # y = [0,800], x = [0,1200], theta = [-4,4]
         msg2.data = [0, 400, 0, 600, -4, 4]
         dim0 = MultiArrayDimension()
         dim0.label = 'axes'
