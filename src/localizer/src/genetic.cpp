@@ -23,19 +23,17 @@ class Subscriber: public rclcpp::Node{
     private:
         bool dataFlag = false;
         bool boundsFlag = false;
+        int numPoints = 0;
         std::vector<int16_t> inputData;
         std::vector<int16_t> boundsData;
         void dataCallback(const std_msgs::msg::Int16MultiArray & msg) {
-            if(msg.data.size() <= 0 || dataFlag) return;
-            inputData.clear();
             inputData = msg.data;
+            numPoints = inputData.size();
             dataFlag = true;
             callGeneticAlgorithm();
 
         }
         void boundsCallback(const std_msgs::msg::Int16MultiArray & msg) {
-            if(msg.data.size() <= 0 || boundsFlag) return;
-            boundsData.clear();
             boundsData = msg.data;
             boundsFlag = true;
             callGeneticAlgorithm();
@@ -45,10 +43,9 @@ class Subscriber: public rclcpp::Node{
                 int x, y;
                 float theta;
 
-                runGeneticAlgorithm(inputData.size()/2, inputData, boundsData, x, y, theta);
+                runGeneticAlgorithm(numPoints, inputData, boundsData, x, y, theta);
 
                 auto spatialMessage = std_msgs::msg::Int16MultiArray();
-                spatialMessage.data.resize(2);
                 spatialMessage.data[0] = x;
                 spatialMessage.data[1] = y;
                 localisedSpatialCoordinatePublisher_->publish(spatialMessage);
@@ -968,12 +965,12 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
 
     generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
 
+    individual bestIndividual;
+    float bestFitness = -INFINITY;
+
     float fitnessScores[POPULATION_SIZE];
     individual population[POPULATION_SIZE];
     initPopulation(POPULATION_SIZE, population, boundsData);
-
-    individual bestIndividual = population[0];
-    float bestFitness = -INFINITY;
 
     float currentBestFitness = -INFINITY;
     int currentBestIndividualId = 0;
