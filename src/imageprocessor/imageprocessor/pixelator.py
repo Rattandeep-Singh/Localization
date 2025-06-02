@@ -156,7 +156,7 @@ class Pixelator(Node):
         self.publisher_.publish(msg1)
 
         msg2 = Int16MultiArray()
-        msg2.data = [0, 400, 0, 600, 0, 2*np.pi]
+        msg2.data = [0, 400, 0, 600, -4, 4]
         dim0 = MultiArrayDimension()
         dim0.label = 'axes'
         dim0.size = 3
