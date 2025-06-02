@@ -2,24 +2,48 @@
 #include <random>
 #include <iostream>
 #include <chrono>
+#include <vector>
 
-// #include "rclcpp/rclcpp.hpp"
-// #include "std_msgs/msg/int16_multi_array.hpp"
+#include "rclcpp/rclcpp.hpp"
+#include "std_msgs/msg/int16_multi_array.hpp"
 
 #define PI 3.141592f
 
-// class Subscriber: public rclcpp::Node{
-//     public:
-//         Subscriber() : Node("subscriber"){
-//             subscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&Subscriber::callback, this, std::placeholders::_1));
-//         }
-//     private:
-//         void callback(const std_msgs::msg::Int16MultiArray & msg) const {
+class Subscriber: public rclcpp::Node{
+    public:
+        Subscriber() : Node("subscriber"){
+            dataSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&Subscriber::dataCallback, this, std::placeholders::_1));
+            boundsSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("bounds", 10, std::bind(&Subscriber::boundsCallback, this, std::placeholders::_1));
+        }
+    private:
+        bool dataFlag = false;
+        bool boundsFlag = false;
+        int numPoints = 0;
+        std::vector<int16_t> inputData;
+        std::vector<int16_t> boundsData;
+        void dataCallback(const std_msgs::msg::Int16MultiArray & msg) {
+            inputData = msg.data;
+            numPoints = inputData.size();
+            dataFlag = true;
+            callGeneticAlgorithm();
 
-//         }
-//         rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr subscription_;
-// };
+        }
+        void boundsCallback(const std_msgs::msg::Int16MultiArray & msg) {
+            boundsData = msg.data;
+            boundsFlag = true;
+            callGeneticAlgorithm();
+        }
+        void callGeneticAlgorithm(){
+            if(dataFlag && boundsFlag){
+                runGeneticAlgorithm(numPoints, inputData, boundsData);
+                dataFlag = false;
+                boundsFlag = false;
+            }
+        }
+        rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr dataSubscription_;
+        rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr boundsSubscription_;
 
+};
 
 struct individual{
     float x;
@@ -843,12 +867,6 @@ const int map[MAP_WIDTH][MAP_HEIGHT] = {
 {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0}
 };
 
-int searchSpaceMinX = 0;
-int searchSpaceMaxX = 400;
-int searchSpaceMinY = 0;
-int searchSpaceMaxY = 600;
-float searchSpaceMinTheta = -PI;
-float searchSpaceMaxTheta = PI;
 
 std::default_random_engine generator;
 
@@ -859,11 +877,11 @@ std::uniform_int_distribution<int> populationSize(0, POPULATION_SIZE-1);
 std::normal_distribution<float> linearMutation(0.0f, LINEAR_MUTATION_STD_DEV);
 std::normal_distribution<float> polarMutation(0.0f, POLAR_MUTATION_STD_DEV);
 
-void initPopulation(int length, individual population[]){
+void initPopulation(int length, individual population[], std::vector<int16_t> const &boundsData){
     for(int i = 0; i < length; i++){
-        population[i].x = searchSpaceMinX + normalized(generator) * (searchSpaceMaxX - searchSpaceMinX);
-        population[i].y = searchSpaceMinY + normalized(generator) * (searchSpaceMaxY - searchSpaceMinY);
-        population[i].theta = searchSpaceMinTheta + normalized(generator) * (searchSpaceMaxTheta - searchSpaceMinTheta);
+        population[i].x = boundsData[0] + normalized(generator) * (boundsData[1] - boundsData[0]);
+        population[i].y = boundsData[2] + normalized(generator) * (boundsData[3] - boundsData[2]);
+        population[i].theta = boundsData[4] + normalized(generator) * (boundsData[5] - boundsData[4]);
     }
 }
 
@@ -892,28 +910,28 @@ void crossover(individual* parent1, individual* parent2, individual* child1, ind
     return; 
 }
 
-void mutate(individual* indi){
+void mutate(individual* indi, std::vector<int16_t> const &boundsData){
     if(normalized(generator) > MUTATION_RATE) return;
     indi->x += linearMutation(generator);
-    indi->x = (indi->x>searchSpaceMaxX)? searchSpaceMaxX: indi->x;
-    indi->x = (indi->x<searchSpaceMinX)? searchSpaceMinX: indi->x;
+    indi->x = (indi->x>boundsData[1])? boundsData[1]: indi->x;
+    indi->x = (indi->x<boundsData[0])? boundsData[0]: indi->x;
 
     indi->y += linearMutation(generator);
-    indi->y = (indi->y>searchSpaceMaxY)? searchSpaceMaxY: indi->y;
-    indi->y = (indi->y<searchSpaceMinY)? searchSpaceMinY: indi->y;
+    indi->y = (indi->y>boundsData[3])? boundsData[3]: indi->y;
+    indi->y = (indi->y<boundsData[2])? boundsData[2]: indi->y;
 
     indi->theta += polarMutation(generator);
-    indi->theta = (indi->theta>searchSpaceMaxTheta)? searchSpaceMaxTheta: indi->theta;
-    indi->theta = (indi->theta<searchSpaceMinTheta)? searchSpaceMinTheta: indi->theta;
+    indi->theta = (indi->theta>boundsData[5])? boundsData[5]: indi->theta;
+    indi->theta = (indi->theta<boundsData[4])? boundsData[4]: indi->theta;
 
     return;
 }
 
-float getFitness(individual* indi, int numPoints, int inputData[][2]){
+float getFitness(individual* indi, int numPoints, std::vector<int16_t> const &inputData){
     int newX, newY, sum = 0;
-    for(int i = 0; i < numPoints; i++){
-        newX = (((float)inputData[i][0])*std::cos(indi->theta)) - (((float)inputData[i][1])*std::sin(indi->theta)) + indi->x;
-        newY = (((float)inputData[i][0])*std::sin(indi->theta)) + (((float)inputData[i][1])*std::cos(indi->theta)) + indi->y;
+    for(int i = 0; i < 2*numPoints; i+=2){
+        newX = (((float)inputData[i])*std::cos(indi->theta)) - (((float)inputData[i+1])*std::sin(indi->theta)) + indi->x;
+        newY = (((float)inputData[i])*std::sin(indi->theta)) + (((float)inputData[i+1])*std::cos(indi->theta)) + indi->y;
         if(newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) continue;
         sum += map[newX][newY];
     }
@@ -921,327 +939,18 @@ float getFitness(individual* indi, int numPoints, int inputData[][2]){
     return ((float)sum/((float)numPoints*255.0f));
 }
 
-int main(){
+void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData){
 
     auto start = std::chrono::high_resolution_clock::now();
 
     generator.seed(std::chrono::system_clock::now().time_since_epoch().count());
-
-    int numPoints = 305;
-    int inputData[numPoints][2] = {
-        {-391,-15},
-        {-391,60},
-        {-388,-504},
-        {-388,42},
-        {-385,474},
-        {-382,-177},
-        {-379,276},
-        {-376,-273},
-        {-370,-288},
-        {-352,-516},
-        {-352,-60},
-        {-349,174},
-        {-331,-435},
-        {-328,-435},
-        {-325,294},
-        {-322,333},
-        {-316,597},
-        {-307,-54},
-        {-301,-570},
-        {-301,294},
-        {-295,-72},
-        {-289,-6},
-        {-268,-363},
-        {-247,15},
-        {-241,402},
-        {-229,510},
-        {-226,-450},
-        {-223,-597},
-        {-202,258},
-        {-202,558},
-        {-202,561},
-        {-199,306},
-        {-199,549},
-        {-196,486},
-        {-196,537},
-        {-193,-402},
-        {-193,-72},
-        {-193,525},
-        {-190,513},
-        {-190,516},
-        {-187,504},
-        {-184,492},
-        {-181,480},
-        {-178,84},
-        {-175,-153},
-        {-175,459},
-        {-175,471},
-        {-172,-105},
-        {-172,447},
-        {-172,471},
-        {-169,435},
-        {-169,438},
-        {-166,-336},
-        {-166,426},
-        {-163,414},
-        {-163,474},
-        {-160,402},
-        {-160,474},
-        {-157,390},
-        {-157,393},
-        {-154,381},
-        {-151,-114},
-        {-151,369},
-        {-151,477},
-        {-148,-153},
-        {-148,357},
-        {-145,345},
-        {-145,348},
-        {-142,336},
-        {-139,318},
-        {-139,324},
-        {-139,480},
-        {-136,-288},
-        {-133,-351},
-        {-133,180},
-        {-130,228},
-        {-130,291},
-        {-127,279},
-        {-127,483},
-        {-124,267},
-        {-124,270},
-        {-121,258},
-        {-121,483},
-        {-118,222},
-        {-118,246},
-        {-118,483},
-        {-115,234},
-        {-112,222},
-        {-112,225},
-        {-109,213},
-        {-109,549},
-        {-106,-108},
-        {-106,201},
-        {-106,486},
-        {-103,189},
-        {-97,168},
-        {-94,156},
-        {-94,492},
-        {-91,144},
-        {-91,147},
-        {-88,135},
-        {-85,123},
-        {-82,111},
-        {-79,99},
-        {-79,102},
-        {-76,90},
-        {-73,21},
-        {-73,78},
-        {-73,327},
-        {-70,66},
-        {-70,570},
-        {-67,54},
-        {-67,57},
-        {-64,45},
-        {-64,474},
-        {-64,555},
-        {-61,33},
-        {-58,-285},
-        {-58,21},
-        {-55,9},
-        {-55,12},
-        {-52,-354},
-        {-52,0},
-        {-49,-12},
-        {-49,288},
-        {-49,504},
-        {-46,-24},
-        {-46,-21},
-        {-43,-33},
-        {-43,93},
-        {-43,546},
-        {-40,-45},
-        {-40,507},
-        {-40,594},
-        {-37,-57},
-        {-37,507},
-        {-34,-60},
-        {-31,-168},
-        {-31,-123},
-        {-31,-60},
-        {-28,-60},
-        {-28,282},
-        {-28,504},
-        {-28,510},
-        {-25,-435},
-        {-19,-57},
-        {-16,513},
-        {-13,567},
-        {-7,-54},
-        {-4,516},
-        {2,189},
-        {2,237},
-        {2,552},
-        {5,-51},
-        {5,519},
-        {8,519},
-        {11,366},
-        {14,-573},
-        {14,-48},
-        {14,9},
-        {17,-408},
-        {17,-48},
-        {17,522},
-        {23,270},
-        {26,-45},
-        {29,525},
-        {38,-456},
-        {38,-42},
-        {38,294},
-        {41,-552},
-        {41,528},
-        {50,-585},
-        {50,-39},
-        {50,531},
-        {59,-36},
-        {62,534},
-        {62,567},
-        {68,-480},
-        {68,348},
-        {71,-33},
-        {71,3},
-        {74,-525},
-        {74,537},
-        {77,-45},
-        {83,-30},
-        {83,45},
-        {86,297},
-        {86,540},
-        {86,546},
-        {86,549},
-        {86,552},
-        {86,555},
-        {86,570},
-        {86,573},
-        {89,534},
-        {89,537},
-        {89,585},
-        {92,-27},
-        {92,525},
-        {92,543},
-        {92,591},
-        {95,-27},
-        {95,522},
-        {95,597},
-        {98,546},
-        {104,-84},
-        {104,-24},
-        {107,-243},
-        {116,-21},
-        {119,498},
-        {119,549},
-        {119,582},
-        {122,-231},
-        {125,495},
-        {128,-18},
-        {128,369},
-        {131,492},
-        {131,552},
-        {134,528},
-        {137,-327},
-        {137,-15},
-        {137,489},
-        {140,-333},
-        {140,-15},
-        {140,555},
-        {143,57},
-        {149,-12},
-        {149,486},
-        {149,558},
-        {152,486},
-        {155,486},
-        {158,486},
-        {161,-558},
-        {161,486},
-        {164,480},
-        {164,486},
-        {164,561},
-        {167,384},
-        {167,486},
-        {170,486},
-        {173,486},
-        {173,564},
-        {176,564},
-        {179,-12},
-        {182,0},
-        {185,-3},
-        {185,489},
-        {185,567},
-        {191,492},
-        {191,558},
-        {194,0},
-        {197,495},
-        {197,570},
-        {206,3},
-        {206,420},
-        {206,501},
-        {209,504},
-        {209,573},
-        {215,6},
-        {218,6},
-        {218,513},
-        {218,576},
-        {221,516},
-        {224,405},
-        {227,9},
-        {227,594},
-        {230,534},
-        {230,579},
-        {230,588},
-        {233,543},
-        {233,579},
-        {239,-375},
-        {239,12},
-        {245,15},
-        {248,12},
-        {263,-189},
-        {275,6},
-        {284,24},
-        {284,390},
-        {290,105},
-        {293,450},
-        {296,-567},
-        {296,-237},
-        {296,27},
-        {305,30},
-        {308,-3},
-        {308,30},
-        {314,-261},
-        {317,33},
-        {320,144},
-        {326,-198},
-        {329,36},
-        {332,-336},
-        {341,39},
-        {347,-150},
-        {350,42},
-        {353,42},
-        {356,-516},
-        {362,45},
-        {374,48},
-        {383,51},
-        {386,51},
-        {392,-363},
-        {395,-66},
-        {395,54}
-    };
 
     individual bestIndividual;
     float bestFitness = -INFINITY;
 
     float fitnessScores[POPULATION_SIZE];
     individual population[POPULATION_SIZE];
-    initPopulation(POPULATION_SIZE, population);
+    initPopulation(POPULATION_SIZE, population, boundsData);
 
     float currentBestFitness = -INFINITY;
     int currentBestIndividualId = 0;
@@ -1267,8 +976,8 @@ int main(){
 
         for(int i = 0; i+1 < POPULATION_SIZE; i += 2){
             crossover(&selected[i], &selected[i+1], &population[i], &population[i+1]);
-            mutate(&population[i]);
-            mutate(&population[i+1]);
+            mutate(&population[i], boundsData);
+            mutate(&population[i+1], boundsData);
         }
 
         population[0] = bestIndividual;
@@ -1279,6 +988,321 @@ int main(){
 
     std::cout << "X = " << bestIndividual.x << " Y = " << bestIndividual.y << " Theta = " << bestIndividual.theta << " Fitness = " << bestFitness << std::endl;
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
+}
 
+int main(int argc, char *argv[]){
+
+    rclcpp::init(argc, argv);
+    rclcpp::spin(std::make_shared<Subscriber>());
+    rclcpp::shutdown();
+    // int numPoints = 305;
+    // std::vector<int16_t> inputData = {
+    //     -391,-15,
+    //     -391,60,
+    //     -388,-504,
+    //     -388,42,
+    //     -385,474,
+    //     -382,-177,
+    //     -379,276,
+    //     -376,-273,
+    //     -370,-288,
+    //     -352,-516,
+    //     -352,-60,
+    //     -349,174,
+    //     -331,-435,
+    //     -328,-435,
+    //     -325,294,
+    //     -322,333,
+    //     -316,597,
+    //     -307,-54,
+    //     -301,-570,
+    //     -301,294,
+    //     -295,-72,
+    //     -289,-6,
+    //     -268,-363,
+    //     -247,15,
+    //     -241,402,
+    //     -229,510,
+    //     -226,-450,
+    //     -223,-597,
+    //     -202,258,
+    //     -202,558,
+    //     -202,561,
+    //     -199,306,
+    //     -199,549,
+    //     -196,486,
+    //     -196,537,
+    //     -193,-402,
+    //     -193,-72,
+    //     -193,525,
+    //     -190,513,
+    //     -190,516,
+    //     -187,504,
+    //     -184,492,
+    //     -181,480,
+    //     -178,84,
+    //     -175,-153,
+    //     -175,459,
+    //     -175,471,
+    //     -172,-105,
+    //     -172,447,
+    //     -172,471,
+    //     -169,435,
+    //     -169,438,
+    //     -166,-336,
+    //     -166,426,
+    //     -163,414,
+    //     -163,474,
+    //     -160,402,
+    //     -160,474,
+    //     -157,390,
+    //     -157,393,
+    //     -154,381,
+    //     -151,-114,
+    //     -151,369,
+    //     -151,477,
+    //     -148,-153,
+    //     -148,357,
+    //     -145,345,
+    //     -145,348,
+    //     -142,336,
+    //     -139,318,
+    //     -139,324,
+    //     -139,480,
+    //     -136,-288,
+    //     -133,-351,
+    //     -133,180,
+    //     -130,228,
+    //     -130,291,
+    //     -127,279,
+    //     -127,483,
+    //     -124,267,
+    //     -124,270,
+    //     -121,258,
+    //     -121,483,
+    //     -118,222,
+    //     -118,246,
+    //     -118,483,
+    //     -115,234,
+    //     -112,222,
+    //     -112,225,
+    //     -109,213,
+    //     -109,549,
+    //     -106,-108,
+    //     -106,201,
+    //     -106,486,
+    //     -103,189,
+    //     -97,168,
+    //     -94,156,
+    //     -94,492,
+    //     -91,144,
+    //     -91,147,
+    //     -88,135,
+    //     -85,123,
+    //     -82,111,
+    //     -79,99,
+    //     -79,102,
+    //     -76,90,
+    //     -73,21,
+    //     -73,78,
+    //     -73,327,
+    //     -70,66,
+    //     -70,570,
+    //     -67,54,
+    //     -67,57,
+    //     -64,45,
+    //     -64,474,
+    //     -64,555,
+    //     -61,33,
+    //     -58,-285,
+    //     -58,21,
+    //     -55,9,
+    //     -55,12,
+    //     -52,-354,
+    //     -52,0,
+    //     -49,-12,
+    //     -49,288,
+    //     -49,504,
+    //     -46,-24,
+    //     -46,-21,
+    //     -43,-33,
+    //     -43,93,
+    //     -43,546,
+    //     -40,-45,
+    //     -40,507,
+    //     -40,594,
+    //     -37,-57,
+    //     -37,507,
+    //     -34,-60,
+    //     -31,-168,
+    //     -31,-123,
+    //     -31,-60,
+    //     -28,-60,
+    //     -28,282,
+    //     -28,504,
+    //     -28,510,
+    //     -25,-435,
+    //     -19,-57,
+    //     -16,513,
+    //     -13,567,
+    //     -7,-54,
+    //     -4,516,
+    //     2,189,
+    //     2,237,
+    //     2,552,
+    //     5,-51,
+    //     5,519,
+    //     8,519,
+    //     11,366,
+    //     14,-573,
+    //     14,-48,
+    //     14,9,
+    //     17,-408,
+    //     17,-48,
+    //     17,522,
+    //     23,270,
+    //     26,-45,
+    //     29,525,
+    //     38,-456,
+    //     38,-42,
+    //     38,294,
+    //     41,-552,
+    //     41,528,
+    //     50,-585,
+    //     50,-39,
+    //     50,531,
+    //     59,-36,
+    //     62,534,
+    //     62,567,
+    //     68,-480,
+    //     68,348,
+    //     71,-33,
+    //     71,3,
+    //     74,-525,
+    //     74,537,
+    //     77,-45,
+    //     83,-30,
+    //     83,45,
+    //     86,297,
+    //     86,540,
+    //     86,546,
+    //     86,549,
+    //     86,552,
+    //     86,555,
+    //     86,570,
+    //     86,573,
+    //     89,534,
+    //     89,537,
+    //     89,585,
+    //     92,-27,
+    //     92,525,
+    //     92,543,
+    //     92,591,
+    //     95,-27,
+    //     95,522,
+    //     95,597,
+    //     98,546,
+    //     104,-84,
+    //     104,-24,
+    //     107,-243,
+    //     116,-21,
+    //     119,498,
+    //     119,549,
+    //     119,582,
+    //     122,-231,
+    //     125,495,
+    //     128,-18,
+    //     128,369,
+    //     131,492,
+    //     131,552,
+    //     134,528,
+    //     137,-327,
+    //     137,-15,
+    //     137,489,
+    //     140,-333,
+    //     140,-15,
+    //     140,555,
+    //     143,57,
+    //     149,-12,
+    //     149,486,
+    //     149,558,
+    //     152,486,
+    //     155,486,
+    //     158,486,
+    //     161,-558,
+    //     161,486,
+    //     164,480,
+    //     164,486,
+    //     164,561,
+    //     167,384,
+    //     167,486,
+    //     170,486,
+    //     173,486,
+    //     173,564,
+    //     176,564,
+    //     179,-12,
+    //     182,0,
+    //     185,-3,
+    //     185,489,
+    //     185,567,
+    //     191,492,
+    //     191,558,
+    //     194,0,
+    //     197,495,
+    //     197,570,
+    //     206,3,
+    //     206,420,
+    //     206,501,
+    //     209,504,
+    //     209,573,
+    //     215,6,
+    //     218,6,
+    //     218,513,
+    //     218,576,
+    //     221,516,
+    //     224,405,
+    //     227,9,
+    //     227,594,
+    //     230,534,
+    //     230,579,
+    //     230,588,
+    //     233,543,
+    //     233,579,
+    //     239,-375,
+    //     239,12,
+    //     245,15,
+    //     248,12,
+    //     263,-189,
+    //     275,6,
+    //     284,24,
+    //     284,390,
+    //     290,105,
+    //     293,450,
+    //     296,-567,
+    //     296,-237,
+    //     296,27,
+    //     305,30,
+    //     308,-3,
+    //     308,30,
+    //     314,-261,
+    //     317,33,
+    //     320,144,
+    //     326,-198,
+    //     329,36,
+    //     332,-336,
+    //     341,39,
+    //     347,-150,
+    //     350,42,
+    //     353,42,
+    //     356,-516,
+    //     362,45,
+    //     374,48,
+    //     383,51,
+    //     386,51,
+    //     392,-363,
+    //     395,-66,
+    //     395,54
+    // };
+    
     return 0;
 }
