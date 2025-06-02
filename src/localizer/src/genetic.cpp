@@ -23,12 +23,10 @@ class Subscriber: public rclcpp::Node{
     private:
         bool dataFlag = false;
         bool boundsFlag = false;
-        int numPoints = 0;
         std::vector<int16_t> inputData;
         std::vector<int16_t> boundsData;
         void dataCallback(const std_msgs::msg::Int16MultiArray & msg) {
             inputData = msg.data;
-            numPoints = inputData.size();
             dataFlag = true;
             callGeneticAlgorithm();
 
@@ -43,7 +41,7 @@ class Subscriber: public rclcpp::Node{
                 int x, y;
                 float theta;
 
-                runGeneticAlgorithm(numPoints, inputData, boundsData, x, y, theta);
+                runGeneticAlgorithm(inputData.size()/2, inputData, boundsData, x, y, theta);
 
                 auto spatialMessage = std_msgs::msg::Int16MultiArray();
                 spatialMessage.data.resize(2);
