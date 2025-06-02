@@ -6,6 +6,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/int16_multi_array.hpp"
+#include "std_msgs/msg/float32.hpp"
 
 #define PI 3.141592f
 
@@ -14,6 +15,8 @@ class Subscriber: public rclcpp::Node{
         Subscriber() : Node("subscriber"){
             dataSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&Subscriber::dataCallback, this, std::placeholders::_1));
             boundsSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("bounds", 10, std::bind(&Subscriber::boundsCallback, this, std::placeholders::_1));
+            localisedSpatialCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Int16MultiArray>("localisedSpatialCoordinates", 10);
+            localisedRotationalCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Float32>("localisedRotationalCoordinates", 10);
         }
     private:
         bool dataFlag = false;
@@ -35,13 +38,28 @@ class Subscriber: public rclcpp::Node{
         }
         void callGeneticAlgorithm(){
             if(dataFlag && boundsFlag){
-                runGeneticAlgorithm(numPoints, inputData, boundsData);
+                int x, y;
+                float theta;
+
+                runGeneticAlgorithm(numPoints, inputData, boundsData, x, y, theta);
+
+                auto spatialMessage = std_msgs::msg::Int16MultiArray();
+                spatialMessage.data[0] = x;
+                spatialMessage.data[1] = y;
+                localisedSpatialCoordinatePublisher_->publish(spatialMessage);
+
+                auto rotationalMessage = std_msgs::msg::Float32();
+                rotationalMessage.data = theta;
+                localisedRotationalCoordinatePublisher_->publish(rotationalMessage);
+
                 dataFlag = false;
                 boundsFlag = false;
             }
         }
         rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr dataSubscription_;
         rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr boundsSubscription_;
+        rclcpp::Publisher<std_msgs::msg::Int16MultiArray>::SharedPtr localisedSpatialCoordinatePublisher_;
+        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr localisedRotationalCoordinatePublisher_;
 
 };
 
@@ -881,7 +899,7 @@ void initPopulation(int length, individual population[], std::vector<int16_t> co
     for(int i = 0; i < length; i++){
         population[i].x = boundsData[0] + normalized(generator) * (boundsData[1] - boundsData[0]);
         population[i].y = boundsData[2] + normalized(generator) * (boundsData[3] - boundsData[2]);
-        population[i].theta = boundsData[4] + normalized(generator) * (boundsData[5] - boundsData[4]);
+        population[i].theta = (float)boundsData[4] + normalized(generator) * (float)(boundsData[5] - boundsData[4]);
     }
 }
 
@@ -921,8 +939,8 @@ void mutate(individual* indi, std::vector<int16_t> const &boundsData){
     indi->y = (indi->y<boundsData[2])? boundsData[2]: indi->y;
 
     indi->theta += polarMutation(generator);
-    indi->theta = (indi->theta>boundsData[5])? boundsData[5]: indi->theta;
-    indi->theta = (indi->theta<boundsData[4])? boundsData[4]: indi->theta;
+    indi->theta = (indi->theta>boundsData[5])? (float)boundsData[5]: indi->theta;
+    indi->theta = (indi->theta<boundsData[4])? (float)boundsData[4]: indi->theta;
 
     return;
 }
@@ -939,7 +957,7 @@ float getFitness(individual* indi, int numPoints, std::vector<int16_t> const &in
     return ((float)sum/((float)numPoints*255.0f));
 }
 
-void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData){
+void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData, int &xOut, int &yOut, float &thetaOut){
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -985,6 +1003,10 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
     }
 
     auto stop = std::chrono::high_resolution_clock::now();
+
+    xOut = bestIndividual.x;
+    yOut = bestIndividual.y;
+    thetaOut = bestIndividual.theta;
 
     std::cout << "X = " << bestIndividual.x << " Y = " << bestIndividual.y << " Theta = " << bestIndividual.theta << " Fitness = " << bestFitness << std::endl;
     std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
