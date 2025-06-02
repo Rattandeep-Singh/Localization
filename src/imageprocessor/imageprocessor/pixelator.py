@@ -117,10 +117,9 @@ def skeletonizer():
         initial_time = time.time()
         original, thinned, dotted = process_image('/media/aayush/New Volume/Localization/src/imageprocessor/imageprocessor/damaged_image.jpeg',
                                                   grid_spacing=spacing)
-        print(f"Time taken: {time.time() - initial_time:.2f} seconds")
         # Save results
-        cv2.imwrite(f'thinned_grid_{spacing}.png', thinned)
-        cv2.imwrite(f'dotted_grid_{spacing}.png', dotted)
+        # cv2.imwrite(f'thinned_grid_{spacing}.png', thinned)
+        # cv2.imwrite(f'dotted_grid_{spacing}.png', dotted)
         white_arr = np.where(dotted == 255)
         # print(white_arr)
         x_arr= white_arr[1] - 600
@@ -128,7 +127,7 @@ def skeletonizer():
         flattened_arr = np.stack((y_arr, x_arr), axis=1).flatten().astype(np.int16).tolist()
         # print(flattened_arr)
         # Visualize results
-        visualize_results(original, thinned, dotted)
+        # visualize_results(original, thinned, dotted)
     return flattened_arr
 
 class Pixelator(Node):
@@ -136,10 +135,10 @@ class Pixelator(Node):
         super().__init__('pixelator')
         self.publisher1 = self.create_publisher(Int16MultiArray, 'pixelated_image', 10)
         self.publisher2 = self.create_publisher(Int16MultiArray, 'bounds', 10)
-        self.timer = self.create_timer(0.05, self.publish_array)
+        self.timer = self.create_timer(0.01, self.publish_array)
 
     def publish_array(self):
-
+        start_time = time.time()
         flattened_arr = skeletonizer()
         msg1 = Int16MultiArray()
         msg1.data = flattened_arr
@@ -170,7 +169,7 @@ class Pixelator(Node):
         msg2.layout.dim = [dim0, dim1]
         msg2.layout.data_offset = 0
         self.publisher2.publish(msg2)
-
+        print(f"Time taken: {time.time() - start_time:.2f} seconds")
 
 def main(args=None):
     rclpy.init(args=args)
