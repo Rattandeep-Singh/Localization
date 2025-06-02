@@ -134,8 +134,8 @@ def skeletonizer():
 class Pixelator(Node):
     def __init__(self):
         super().__init__('pixelator')
-        self.publisher_ = self.create_publisher(Int16MultiArray, 'pixelated_image', 10)
-        self.publisher_ = self.create_publisher(Int16MultiArray, 'bounds', 10)
+        self.publisher1 = self.create_publisher(Int16MultiArray, 'pixelated_image', 10)
+        self.publisher2 = self.create_publisher(Int16MultiArray, 'bounds', 10)
         self.timer = self.create_timer(0.05, self.publish_array)
 
     def publish_array(self):
@@ -153,7 +153,7 @@ class Pixelator(Node):
         dim1.stride = 2
         msg1.layout.dim = [dim0, dim1]
         msg1.layout.data_offset = 0
-        self.publisher_.publish(msg1)
+        self.publisher1.publish(msg1)
 
         msg2 = Int16MultiArray()
         msg2.data = [0, 400, 0, 600, -4, 4]
@@ -167,7 +167,7 @@ class Pixelator(Node):
         dim1.stride = 2
         msg2.layout.dim = [dim0, dim1]
         msg2.layout.data_offset = 0
-        self.publisher_.publish(msg2)
+        self.publisher2.publish(msg2)
 
 
 def main(args=None):
