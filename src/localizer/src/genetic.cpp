@@ -74,13 +74,13 @@ const int MAP_WIDTH = 800;
 const int MAP_HEIGHT = 1200;
 
 float CROSSOVER_RATE = 0.7f;
-float MUTATION_RATE = 0.2f;
+float MUTATION_RATE = 0.3f;
 
 float LINEAR_MUTATION_STD_DEV = 30.0f;
-float POLAR_MUTATION_STD_DEV = 0.25f;
+float POLAR_MUTATION_STD_DEV = 0.33f;
 
 const int MAX_GENERATIONS = 100;
-const int POPULATION_SIZE = 100;
+const int POPULATION_SIZE = 150;
 float EARLY_BREAK_THRESHOLD = 0.95;
 
 const int map[MAP_WIDTH][MAP_HEIGHT] = {
