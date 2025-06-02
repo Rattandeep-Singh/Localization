@@ -992,7 +992,7 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
             bestIndividual = population[currentBestIndividualId];
         }
 
-        //if(bestFitness > EARLY_BREAK_THRESHOLD) break;
+        if(bestFitness > EARLY_BREAK_THRESHOLD) break;
 
         individual selected[POPULATION_SIZE];
         selectPopulation(POPULATION_SIZE, fitnessScores, population, selected);
