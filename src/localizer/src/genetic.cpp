@@ -12,11 +12,11 @@
 
 void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData, int &xOut, int &yOut, float &thetaOut);
 
-class Subscriber: public rclcpp::Node{
+class GeneticLocaliser: public rclcpp::Node{
     public:
-        Subscriber() : Node("subscriber"){
-            dataSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&Subscriber::dataCallback, this, std::placeholders::_1));
-            boundsSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("bounds", 10, std::bind(&Subscriber::boundsCallback, this, std::placeholders::_1));
+        GeneticLocaliser() : Node("geneticLocaliser"){
+            dataSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&GeneticLocaliser::dataCallback, this, std::placeholders::_1));
+            boundsSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("bounds", 10, std::bind(&GeneticLocaliser::boundsCallback, this, std::placeholders::_1));
             localisedSpatialCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Int16MultiArray>("localisedSpatialCoordinates", 10);
             localisedRotationalCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Float32>("localisedRotationalCoordinates", 10);
         }
@@ -81,8 +81,8 @@ float MUTATION_RATE = 0.2f;
 float LINEAR_MUTATION_STD_DEV = 30.0f;
 float POLAR_MUTATION_STD_DEV = 0.30f;
 
-const int MAX_GENERATIONS = 100;
-const int POPULATION_SIZE = 100;
+const int MAX_GENERATIONS = 60;
+const int POPULATION_SIZE = 500;
 float EARLY_BREAK_THRESHOLD = 0.95;
 
 const int map[MAP_WIDTH][MAP_HEIGHT] = {
@@ -1020,7 +1020,7 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
 int main(int argc, char *argv[]){
 
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<Subscriber>());
+    rclcpp::spin(std::make_shared<GeneticLocaliser>());
     rclcpp::shutdown();
    
     return 0;
