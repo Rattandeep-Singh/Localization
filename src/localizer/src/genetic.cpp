@@ -81,7 +81,7 @@ float CROSSOVER_RATE = 0.7f;
 float MUTATION_RATE = 0.2f;
 
 float LINEAR_MUTATION_STD_DEV = 30.0f;
-float POLAR_MUTATION_STD_DEV = 0.25f;
+float POLAR_MUTATION_STD_DEV = 0.30f;
 
 const int MAX_GENERATIONS = 100;
 const int POPULATION_SIZE = 100;
@@ -952,9 +952,11 @@ void mutate(individual* indi, std::vector<int16_t> const &boundsData){
 
 float getFitness(individual* indi, int numPoints, std::vector<int16_t> const &inputData){
     int newX, newY, sum = 0;
+    float cachedSin = std::sin(indi->theta);
+    float cachedCos = std::cos(indi->theta);
     for(int i = 0; i < 2*numPoints; i+=2){
-        newX = (((float)inputData[i])*std::cos(indi->theta)) - (((float)inputData[i+1])*std::sin(indi->theta)) + indi->x;
-        newY = (((float)inputData[i])*std::sin(indi->theta)) + (((float)inputData[i+1])*std::cos(indi->theta)) + indi->y;
+        newX = (((float)inputData[i])*cachedCos) - (((float)inputData[i+1])*cachedSin) + indi->x;
+        newY = (((float)inputData[i])*cachedSin) + (((float)inputData[i+1])*cachedCos) + indi->y;
         if(newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) continue;
         sum += map[newX][newY];
     }
