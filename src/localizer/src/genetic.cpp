@@ -12,11 +12,11 @@
 
 void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData, int &xOut, int &yOut, float &thetaOut);
 
-class Subscriber: public rclcpp::Node{
+class GeneticLocaliser: public rclcpp::Node{
     public:
-        Subscriber() : Node("subscriber"){
-            dataSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&Subscriber::dataCallback, this, std::placeholders::_1));
-            boundsSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("bounds", 10, std::bind(&Subscriber::boundsCallback, this, std::placeholders::_1));
+        GeneticLocaliser() : Node("geneticLocaliser"){
+            dataSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&GeneticLocaliser::dataCallback, this, std::placeholders::_1));
+            boundsSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("bounds", 10, std::bind(&GeneticLocaliser::boundsCallback, this, std::placeholders::_1));
             localisedSpatialCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Int16MultiArray>("localisedSpatialCoordinates", 10);
             localisedRotationalCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Float32>("localisedRotationalCoordinates", 10);
         }
@@ -26,12 +26,14 @@ class Subscriber: public rclcpp::Node{
         std::vector<int16_t> inputData;
         std::vector<int16_t> boundsData;
         void dataCallback(const std_msgs::msg::Int16MultiArray & msg) {
+            if(msg.data.size() <= 0 || dataFlag) return;
             inputData = msg.data;
             dataFlag = true;
             callGeneticAlgorithm();
 
         }
         void boundsCallback(const std_msgs::msg::Int16MultiArray & msg) {
+            if(msg.data.size() <= 0 || boundsFlag) return;
             boundsData = msg.data;
             boundsFlag = true;
             callGeneticAlgorithm();
@@ -74,14 +76,17 @@ const int MAP_WIDTH = 800;
 const int MAP_HEIGHT = 1200;
 
 float CROSSOVER_RATE = 0.7f;
-float MUTATION_RATE = 0.3f;
+float MUTATION_RATE = 0.2f;
 
 float LINEAR_MUTATION_STD_DEV = 30.0f;
-float POLAR_MUTATION_STD_DEV = 0.33f;
+float POLAR_MUTATION_STD_DEV = 0.30f;
 
-const int MAX_GENERATIONS = 100;
-const int POPULATION_SIZE = 150;
+const int MAX_GENERATIONS = 60;
+const int POPULATION_SIZE = 500;
 float EARLY_BREAK_THRESHOLD = 0.95;
+int PLATEAU_THRESHOLD = 15;
+
+const bool LOGGING = true;
 
 const int map[MAP_WIDTH][MAP_HEIGHT] = {
 {0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0  ,0},
@@ -912,45 +917,47 @@ void selectPopulation(int length, float fitnessScores[],individual currGen[] ,in
     }
 }
 
-void crossover(individual* parent1, individual* parent2, individual* child1, individual* child2){
+void crossover(individual& parent1, individual& parent2, individual& child1, individual& child2){
     if(normalized(generator) > CROSSOVER_RATE){
-        *child1 = *parent1;
-        *child2 = *parent2;
+        child1 = parent1;
+        child2 = parent2;
         return;
     }
 
-    child1->x = (normalized(generator) > 0.5f)?parent1->x:parent2->x;
-    child1->y = (normalized(generator) > 0.5f)?parent1->y:parent2->y;
-    child1->theta = (normalized(generator) > 0.5f)?parent1->theta:parent2->theta;
+    child1.x = (normalized(generator) > 0.5f)?parent1.x:parent2.x;
+    child1.y = (normalized(generator) > 0.5f)?parent1.y:parent2.y;
+    child1.theta = (normalized(generator) > 0.5f)?parent1.theta:parent2.theta;
 
-    child2->x = (normalized(generator) > 0.5f)?parent1->x:parent2->x;
-    child2->y = (normalized(generator) > 0.5f)?parent1->y:parent2->y;
-    child2->theta = (normalized(generator) > 0.5f)?parent1->theta:parent2->theta;
+    child2.x = (normalized(generator) > 0.5f)?parent1.x:parent2.x;
+    child2.y = (normalized(generator) > 0.5f)?parent1.y:parent2.y;
+    child2.theta = (normalized(generator) > 0.5f)?parent1.theta:parent2.theta;
     return; 
 }
 
-void mutate(individual* indi, std::vector<int16_t> const &boundsData){
+void mutate(individual &indi, std::vector<int16_t> const &boundsData){
     if(normalized(generator) > MUTATION_RATE) return;
-    indi->x += linearMutation(generator);
-    indi->x = (indi->x>boundsData[1])? boundsData[1]: indi->x;
-    indi->x = (indi->x<boundsData[0])? boundsData[0]: indi->x;
+    indi.x += linearMutation(generator);
+    indi.x = (indi.x>boundsData[1])? boundsData[1]: indi.x;
+    indi.x = (indi.x<boundsData[0])? boundsData[0]: indi.x;
 
-    indi->y += linearMutation(generator);
-    indi->y = (indi->y>boundsData[3])? boundsData[3]: indi->y;
-    indi->y = (indi->y<boundsData[2])? boundsData[2]: indi->y;
+    indi.y += linearMutation(generator);
+    indi.y = (indi.y>boundsData[3])? boundsData[3]: indi.y;
+    indi.y = (indi.y<boundsData[2])? boundsData[2]: indi.y;
 
-    indi->theta += polarMutation(generator);
-    indi->theta = (indi->theta>boundsData[5])? (float)boundsData[5]: indi->theta;
-    indi->theta = (indi->theta<boundsData[4])? (float)boundsData[4]: indi->theta;
+    indi.theta += polarMutation(generator);
+    indi.theta = (indi.theta>boundsData[5])? (float)boundsData[5]: indi.theta;
+    indi.theta = (indi.theta<boundsData[4])? (float)boundsData[4]: indi.theta;
 
     return;
 }
 
-float getFitness(individual* indi, int numPoints, std::vector<int16_t> const &inputData){
+float getFitness(individual &indi, int numPoints, std::vector<int16_t> const &inputData){
     int newX, newY, sum = 0;
+    float cachedSin = std::sin(indi.theta);
+    float cachedCos = std::cos(indi.theta);
     for(int i = 0; i < 2*numPoints; i+=2){
-        newX = (((float)inputData[i])*std::cos(indi->theta)) - (((float)inputData[i+1])*std::sin(indi->theta)) + indi->x;
-        newY = (((float)inputData[i])*std::sin(indi->theta)) + (((float)inputData[i+1])*std::cos(indi->theta)) + indi->y;
+        newX = (((float)inputData[i])*cachedCos) - (((float)inputData[i+1])*cachedSin) + indi.x;
+        newY = (((float)inputData[i])*cachedSin) + (((float)inputData[i+1])*cachedCos) + indi.y;
         if(newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) continue;
         sum += map[newX][newY];
     }
@@ -974,10 +981,13 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
     float currentBestFitness = -INFINITY;
     int currentBestIndividualId = 0;
 
+    float lastBestFitness = -INFINITY;
+    int plateauCount = 0;
+
     for(int genNum = 0; genNum < MAX_GENERATIONS; genNum++){
         currentBestFitness = -INFINITY;
         for(int i = 0; i < POPULATION_SIZE; i++){
-            fitnessScores[i] = getFitness(&population[i], numPoints, inputData);
+            fitnessScores[i] = getFitness(population[i], numPoints, inputData);
             if(fitnessScores[i] > currentBestFitness){
                 currentBestFitness = fitnessScores[i];
                 currentBestIndividualId = i;
@@ -988,15 +998,29 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
             bestIndividual = population[currentBestIndividualId];
         }
 
-        if(bestFitness > EARLY_BREAK_THRESHOLD) break;
+        if(bestFitness > EARLY_BREAK_THRESHOLD){
+            if(LOGGING) std::cout << "Early break after " << genNum << " generations" << std::endl;
+            break;
+        }
+
+        if(bestFitness == lastBestFitness){
+            plateauCount++;
+            if(plateauCount > PLATEAU_THRESHOLD){
+                if(LOGGING) std::cout << "Plateau reached after " << genNum << " generations" << std::endl;
+                break;
+            }
+        }else{
+            plateauCount = 0;
+            lastBestFitness = bestFitness;
+        }
 
         individual selected[POPULATION_SIZE];
         selectPopulation(POPULATION_SIZE, fitnessScores, population, selected);
 
         for(int i = 0; i+1 < POPULATION_SIZE; i += 2){
-            crossover(&selected[i], &selected[i+1], &population[i], &population[i+1]);
-            mutate(&population[i], boundsData);
-            mutate(&population[i+1], boundsData);
+            crossover(selected[i], selected[i+1], population[i], population[i+1]);
+            mutate(population[i], boundsData);
+            mutate(population[i+1], boundsData);
         }
 
         population[0] = bestIndividual;
@@ -1009,14 +1033,14 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
     yOut = bestIndividual.y;
     thetaOut = bestIndividual.theta;
 
-    std::cout << "X = " << bestIndividual.x << " Y = " << bestIndividual.y << " Theta = " << bestIndividual.theta << " Fitness = " << bestFitness << std::endl;
-    std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
+    if(LOGGING) std::cout << "X = " << bestIndividual.x << " Y = " << bestIndividual.y << " Theta = " << bestIndividual.theta << " Fitness = " << bestFitness << std::endl;
+    if(LOGGING) std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
 }
 
 int main(int argc, char *argv[]){
 
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<Subscriber>());
+    rclcpp::spin(std::make_shared<GeneticLocaliser>());
     rclcpp::shutdown();
    
     return 0;
