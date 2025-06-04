@@ -1039,8 +1039,11 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
     yOut = bestIndividual.y;
     thetaOut = bestIndividual.theta;
 
-    if(LOGGING) std::cout << "X = " << bestIndividual.x << " Y = " << bestIndividual.y << " Theta = " << bestIndividual.theta << " Fitness = " << bestFitness << std::endl;
-    if(LOGGING) std::cout << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() << " ms" << std::endl;
+    if(LOGGING){
+        std::cout << "X = " << bestIndividual.x << " Y = " << bestIndividual.y << " Theta = " << bestIndividual.theta << " Fitness = " << bestFitness << std::endl;
+        int timeTaken = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+        std::cout << 1000000/timeTaken << " fps " << timeTaken << " μs" <<std::endl;
+    }
 }
 
 int main(int argc, char *argv[]){
