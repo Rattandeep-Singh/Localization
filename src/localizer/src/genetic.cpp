@@ -26,12 +26,14 @@ class Subscriber: public rclcpp::Node{
         std::vector<int16_t> inputData;
         std::vector<int16_t> boundsData;
         void dataCallback(const std_msgs::msg::Int16MultiArray & msg) {
+            if(msg.data.size() <= 0 || dataFlag) return;
             inputData = msg.data;
             dataFlag = true;
             callGeneticAlgorithm();
 
         }
         void boundsCallback(const std_msgs::msg::Int16MultiArray & msg) {
+            if(msg.data.size() <= 0 || boundsFlag) return;
             boundsData = msg.data;
             boundsFlag = true;
             callGeneticAlgorithm();
