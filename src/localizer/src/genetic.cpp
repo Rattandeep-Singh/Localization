@@ -916,47 +916,47 @@ void selectPopulation(int length, float fitnessScores[],individual currGen[] ,in
     }
 }
 
-void crossover(individual* parent1, individual* parent2, individual* child1, individual* child2){
+void crossover(individual& parent1, individual& parent2, individual& child1, individual& child2){
     if(normalized(generator) > CROSSOVER_RATE){
-        *child1 = *parent1;
-        *child2 = *parent2;
+        child1 = parent1;
+        child2 = parent2;
         return;
     }
 
-    child1->x = (normalized(generator) > 0.5f)?parent1->x:parent2->x;
-    child1->y = (normalized(generator) > 0.5f)?parent1->y:parent2->y;
-    child1->theta = (normalized(generator) > 0.5f)?parent1->theta:parent2->theta;
+    child1.x = (normalized(generator) > 0.5f)?parent1.x:parent2.x;
+    child1.y = (normalized(generator) > 0.5f)?parent1.y:parent2.y;
+    child1.theta = (normalized(generator) > 0.5f)?parent1.theta:parent2.theta;
 
-    child2->x = (normalized(generator) > 0.5f)?parent1->x:parent2->x;
-    child2->y = (normalized(generator) > 0.5f)?parent1->y:parent2->y;
-    child2->theta = (normalized(generator) > 0.5f)?parent1->theta:parent2->theta;
+    child2.x = (normalized(generator) > 0.5f)?parent1.x:parent2.x;
+    child2.y = (normalized(generator) > 0.5f)?parent1.y:parent2.y;
+    child2.theta = (normalized(generator) > 0.5f)?parent1.theta:parent2.theta;
     return; 
 }
 
-void mutate(individual* indi, std::vector<int16_t> const &boundsData){
+void mutate(individual &indi, std::vector<int16_t> const &boundsData){
     if(normalized(generator) > MUTATION_RATE) return;
-    indi->x += linearMutation(generator);
-    indi->x = (indi->x>boundsData[1])? boundsData[1]: indi->x;
-    indi->x = (indi->x<boundsData[0])? boundsData[0]: indi->x;
+    indi.x += linearMutation(generator);
+    indi.x = (indi.x>boundsData[1])? boundsData[1]: indi.x;
+    indi.x = (indi.x<boundsData[0])? boundsData[0]: indi.x;
 
-    indi->y += linearMutation(generator);
-    indi->y = (indi->y>boundsData[3])? boundsData[3]: indi->y;
-    indi->y = (indi->y<boundsData[2])? boundsData[2]: indi->y;
+    indi.y += linearMutation(generator);
+    indi.y = (indi.y>boundsData[3])? boundsData[3]: indi.y;
+    indi.y = (indi.y<boundsData[2])? boundsData[2]: indi.y;
 
-    indi->theta += polarMutation(generator);
-    indi->theta = (indi->theta>boundsData[5])? (float)boundsData[5]: indi->theta;
-    indi->theta = (indi->theta<boundsData[4])? (float)boundsData[4]: indi->theta;
+    indi.theta += polarMutation(generator);
+    indi.theta = (indi.theta>boundsData[5])? (float)boundsData[5]: indi.theta;
+    indi.theta = (indi.theta<boundsData[4])? (float)boundsData[4]: indi.theta;
 
     return;
 }
 
-float getFitness(individual* indi, int numPoints, std::vector<int16_t> const &inputData){
+float getFitness(individual &indi, int numPoints, std::vector<int16_t> const &inputData){
     int newX, newY, sum = 0;
-    float cachedSin = std::sin(indi->theta);
-    float cachedCos = std::cos(indi->theta);
+    float cachedSin = std::sin(indi.theta);
+    float cachedCos = std::cos(indi.theta);
     for(int i = 0; i < 2*numPoints; i+=2){
-        newX = (((float)inputData[i])*cachedCos) - (((float)inputData[i+1])*cachedSin) + indi->x;
-        newY = (((float)inputData[i])*cachedSin) + (((float)inputData[i+1])*cachedCos) + indi->y;
+        newX = (((float)inputData[i])*cachedCos) - (((float)inputData[i+1])*cachedSin) + indi.x;
+        newY = (((float)inputData[i])*cachedSin) + (((float)inputData[i+1])*cachedCos) + indi.y;
         if(newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) continue;
         sum += map[newX][newY];
     }
@@ -983,7 +983,7 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
     for(int genNum = 0; genNum < MAX_GENERATIONS; genNum++){
         currentBestFitness = -INFINITY;
         for(int i = 0; i < POPULATION_SIZE; i++){
-            fitnessScores[i] = getFitness(&population[i], numPoints, inputData);
+            fitnessScores[i] = getFitness(population[i], numPoints, inputData);
             if(fitnessScores[i] > currentBestFitness){
                 currentBestFitness = fitnessScores[i];
                 currentBestIndividualId = i;
@@ -1000,9 +1000,9 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
         selectPopulation(POPULATION_SIZE, fitnessScores, population, selected);
 
         for(int i = 0; i+1 < POPULATION_SIZE; i += 2){
-            crossover(&selected[i], &selected[i+1], &population[i], &population[i+1]);
-            mutate(&population[i], boundsData);
-            mutate(&population[i+1], boundsData);
+            crossover(selected[i], selected[i+1], population[i], population[i+1]);
+            mutate(population[i], boundsData);
+            mutate(population[i+1], boundsData);
         }
 
         population[0] = bestIndividual;
