@@ -81,10 +81,10 @@ float MUTATION_RATE = 0.2f;
 float LINEAR_MUTATION_STD_DEV = 30.0f;
 float POLAR_MUTATION_STD_DEV = 0.30f;
 
-const int MAX_GENERATIONS = 60;
-const int POPULATION_SIZE = 500;
+const int MAX_GENERATIONS = 100;
+const int POPULATION_SIZE = 200;
 float EARLY_BREAK_THRESHOLD = 0.95;
-int PLATEAU_THRESHOLD = 15;
+int PLATEAU_THRESHOLD = 10;
 
 const bool LOGGING = true;
 
@@ -951,18 +951,20 @@ void mutate(individual &indi, std::vector<int16_t> const &boundsData){
     return;
 }
 
-float getFitness(individual &indi, int numPoints, std::vector<int16_t> const &inputData){
+int getFitness(individual &indi, int numPoints, std::vector<int16_t> const &inputData, const int FIXED_POINT_ONE, const int FIXED_SHIFT){
     int newX, newY, sum = 0;
-    float cachedSin = std::sin(indi.theta);
-    float cachedCos = std::cos(indi.theta);
+    int cachedSin = (int)(std::sin(indi.theta)*FIXED_POINT_ONE);
+    int cachedCos = (int)(std::cos(indi.theta)*FIXED_POINT_ONE);
+    int indiXFixedPoint = indi.x*FIXED_POINT_ONE;
+    int indiYFixedPoint = indi.y*FIXED_POINT_ONE;
     for(int i = 0; i < 2*numPoints; i+=2){
-        newX = (((float)inputData[i])*cachedCos) - (((float)inputData[i+1])*cachedSin) + indi.x;
-        newY = (((float)inputData[i])*cachedSin) + (((float)inputData[i+1])*cachedCos) + indi.y;
+        newX = (((inputData[i])*cachedCos) - ((inputData[i+1])*cachedSin) + indiXFixedPoint) >> FIXED_SHIFT;
+        newY = (((inputData[i])*cachedSin) + ((inputData[i+1])*cachedCos) + indiYFixedPoint) >> FIXED_SHIFT;
         if(newX < 0 || newX >= MAP_WIDTH || newY < 0 || newY >= MAP_HEIGHT) continue;
         sum += map[newX][newY];
     }
     
-    return ((float)sum/((float)numPoints*255.0f));
+    return sum;
 }
 
 void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData, int &xOut, int &yOut, float &thetaOut){
@@ -984,10 +986,14 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
     float lastBestFitness = -INFINITY;
     int plateauCount = 0;
 
+    float fitnessNormalizationFactor = 1.0f/(255.0f * (float)numPoints);
+    const int FIXED_SHIFT = 16;
+    const int FIXED_POINT_ONE = 1 << FIXED_SHIFT;
+
     for(int genNum = 0; genNum < MAX_GENERATIONS; genNum++){
         currentBestFitness = -INFINITY;
         for(int i = 0; i < POPULATION_SIZE; i++){
-            fitnessScores[i] = getFitness(population[i], numPoints, inputData);
+            fitnessScores[i] = fitnessNormalizationFactor * (float)getFitness(population[i], numPoints, inputData, FIXED_POINT_ONE, FIXED_SHIFT);
             if(fitnessScores[i] > currentBestFitness){
                 currentBestFitness = fitnessScores[i];
                 currentBestIndividualId = i;
