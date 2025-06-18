@@ -13,9 +13,10 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(OpenCV REQUIRED)
 
 add_executable(geneticLocaliser src/genetic.cpp)
-ament_target_dependencies(geneticLocaliser rclcpp std_msgs)
+ament_target_dependencies(geneticLocaliser rclcpp std_msgs OpenCV)
 
 install(TARGETS
   geneticLocaliser
