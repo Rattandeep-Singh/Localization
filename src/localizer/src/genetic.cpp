@@ -8,8 +8,15 @@
 #include "std_msgs/msg/int16_multi_array.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include <opencv2/imgcodecs.hpp>
+#include "localizer/srv/localisation.hpp"
 
 #define PI 3.141592f
+
+struct individual{
+    float x;
+    float y;
+    float theta;
+};
 
 const cv::String mapFilename = "distance_field.png";
 
@@ -17,73 +24,6 @@ cv::Mat mapImage;
 
 int MAP_WIDTH;
 int MAP_HEIGHT;
-
-void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, std::vector<int16_t> const &boundsData, int &xOut, int &yOut, float &thetaOut);
-
-class GeneticLocaliser: public rclcpp::Node{
-    public:
-        GeneticLocaliser() : Node("geneticLocaliser"){
-            mapImage = cv::imread(mapFilename, cv::IMREAD_GRAYSCALE);
-            MAP_HEIGHT = mapImage.rows;
-            MAP_WIDTH = mapImage.cols;
-            std::cout<<MAP_HEIGHT<<" "<<MAP_WIDTH<<std::endl;
-            
-            dataSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("pixelated_image", 10, std::bind(&GeneticLocaliser::dataCallback, this, std::placeholders::_1));
-            boundsSubscription_ = this->create_subscription<std_msgs::msg::Int16MultiArray>("bounds", 10, std::bind(&GeneticLocaliser::boundsCallback, this, std::placeholders::_1));
-            localisedSpatialCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Int16MultiArray>("localisedSpatialCoordinates", 10);
-            localisedRotationalCoordinatePublisher_ = this->create_publisher<std_msgs::msg::Float32>("localisedRotationalCoordinates", 10);
-        }
-    private:
-        bool dataFlag = false;
-        bool boundsFlag = false;
-        std::vector<int16_t> inputData;
-        std::vector<int16_t> boundsData;
-        void dataCallback(const std_msgs::msg::Int16MultiArray & msg) {
-            if(msg.data.size() <= 0 || dataFlag) return;
-            inputData = msg.data;
-            dataFlag = true;
-            callGeneticAlgorithm();
-
-        }
-        void boundsCallback(const std_msgs::msg::Int16MultiArray & msg) {
-            if(msg.data.size() <= 0 || boundsFlag) return;
-            boundsData = msg.data;
-            boundsFlag = true;
-            callGeneticAlgorithm();
-        }
-        void callGeneticAlgorithm(){
-            if(dataFlag && boundsFlag){
-                int x, y;
-                float theta;
-
-                runGeneticAlgorithm(inputData.size()/2, inputData, boundsData, x, y, theta);
-
-                auto spatialMessage = std_msgs::msg::Int16MultiArray();
-                spatialMessage.data.resize(2);
-                spatialMessage.data[0] = x;
-                spatialMessage.data[1] = y;
-                localisedSpatialCoordinatePublisher_->publish(spatialMessage);
-
-                auto rotationalMessage = std_msgs::msg::Float32();
-                rotationalMessage.data = theta;
-                localisedRotationalCoordinatePublisher_->publish(rotationalMessage);
-
-                dataFlag = false;
-                boundsFlag = false;
-            }
-        }
-        rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr dataSubscription_;
-        rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr boundsSubscription_;
-        rclcpp::Publisher<std_msgs::msg::Int16MultiArray>::SharedPtr localisedSpatialCoordinatePublisher_;
-        rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr localisedRotationalCoordinatePublisher_;
-
-};
-
-struct individual{
-    float x;
-    float y;
-    float theta;
-};
 
 float CROSSOVER_RATE = 0.7f;
 float MUTATION_RATE = 0.2f;
@@ -252,11 +192,42 @@ void runGeneticAlgorithm(int numPoints, std::vector<int16_t> const &inputData, s
     }
 }
 
-int main(int argc, char *argv[]){
 
+void localise(const std::shared_ptr<localizer::srv::Localisation::Request> request, std::shared_ptr<localizer::srv::Localisation::Response> response)
+{   
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Incoming request");
+
+    int x, y;
+    float theta;
+    
+    runGeneticAlgorithm(request->points.data.size()/2, request->points.data, request->bounds.data, x, y, theta);
+
+    auto spatialMessage = std_msgs::msg::Int16MultiArray();
+    spatialMessage.data.resize(2);
+    spatialMessage.data[0] = x;
+    spatialMessage.data[1] = y;
+
+    response->position = spatialMessage;
+    response->rotation.data = theta;
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Sending back response: X = [%d] Y = [%d] Theta = [%f]", (int)(response->position.data[0]), (int)(response->position.data[1]), (float)(response->rotation.data));
+}
+
+int main(int argc, char *argv[]){
     rclcpp::init(argc, argv);
-    rclcpp::spin(std::make_shared<GeneticLocaliser>());
+
+    mapImage = cv::imread(mapFilename, cv::IMREAD_GRAYSCALE);
+    MAP_HEIGHT = mapImage.rows;
+    MAP_WIDTH = mapImage.cols;
+    std::cout<<MAP_HEIGHT<<" "<<MAP_WIDTH<<std::endl;
+
+    std::shared_ptr<rclcpp::Node> node = rclcpp::Node::make_shared("localisation_server");
+
+    rclcpp::Service<localizer::srv::Localisation>::SharedPtr service =
+    node->create_service<localizer::srv::Localisation>("localise", &localise);
+
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), "Ready to localise");
+
+    rclcpp::spin(node);
     rclcpp::shutdown();
-   
-    return 0;
 }

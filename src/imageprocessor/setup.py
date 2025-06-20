@@ -20,8 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'pixelator = imageprocessor.pixelator:main',
-            'visualizer = imageprocessor.visualizer:main'
+            'localisation_client = imageprocessor.localisation_client:main',
         ],
     },
 )

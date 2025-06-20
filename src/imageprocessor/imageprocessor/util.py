@@ -1,11 +1,6 @@
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import Int16MultiArray, MultiArrayDimension
 import cv2
 import numpy as np
 from skimage.morphology import skeletonize, thin
-import matplotlib.pyplot as plt
-import time
 
 def skeletonizer():
     def load_and_preprocess_image(image_path):
@@ -85,37 +80,11 @@ def skeletonizer():
 
         return binary_img, thinned_img, dotted_img
 
-
-    def visualize_results(original, thinned, dotted, save_path=None):
-        """
-        Visualize original, thinned, and dotted images side by side
-        """
-        fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-
-        axes[0].imshow(original, cmap='gray')
-        axes[0].set_title('Original Binary Image')
-        axes[0].axis('off')
-
-        axes[1].imshow(thinned, cmap='gray')
-        axes[1].set_title('Thinned Image')
-        axes[1].axis('off')
-
-        axes[2].imshow(dotted, cmap='gray')
-        axes[2].set_title('Dotted Pattern')
-        axes[2].axis('off')
-
-        plt.tight_layout()
-
-        if save_path:
-            plt.savefig(save_path, dpi=300, bbox_inches='tight')
-        plt.show()
-
     grid_spacings = [3]
 
     for spacing in grid_spacings:
         # print(f"Processing with grid spacing: {spacing}")
-        initial_time = time.time()
-        original, thinned, dotted = process_image('/media/aayush/New Volume/Localization/src/imageprocessor/imageprocessor/damaged_image.jpeg',
+        original, thinned, dotted = process_image('/home/rattan/data/era/localisation_github/Localization/src/imageprocessor/imageprocessor/damaged_image.jpeg',
                                                   grid_spacing=spacing)
         # Save results
         # cv2.imwrite(f'thinned_grid_{spacing}.png', thinned)
@@ -130,51 +99,36 @@ def skeletonizer():
         # visualize_results(original, thinned, dotted)
     return flattened_arr
 
-class Pixelator(Node):
-    def __init__(self):
-        super().__init__('pixelator')
-        self.publisher1 = self.create_publisher(Int16MultiArray, 'pixelated_image', 10)
-        self.publisher2 = self.create_publisher(Int16MultiArray, 'bounds', 10)
-        self.timer = self.create_timer(0.01, self.publish_array)
+def visualise_results(angle, dx, dy):
+    dx = dx - 600
+    dy = 400 - dy
+    img = cv2.imread('/home/rattan/data/era/localisation_github/Localization/src/imageprocessor/imageprocessor/img_1.png')
 
-    def publish_array(self):
-        start_time = time.time()
-        flattened_arr = skeletonizer()
-        msg1 = Int16MultiArray()
-        msg1.data = flattened_arr
-        dim0 = MultiArrayDimension()
-        dim0.label = 'points'
-        dim0.size = len(flattened_arr)//2
-        dim0.stride = len(flattened_arr)
-        dim1 = MultiArrayDimension()
-        dim1.label = 'coords'
-        dim1.size = 2
-        dim1.stride = 2
-        msg1.layout.dim = [dim0, dim1]
-        msg1.layout.data_offset = 0
-        self.publisher1.publish(msg1)
+    cam = cv2.imread('/home/rattan/data/era/localisation_github/Localization/src/imageprocessor/imageprocessor/damaged_image.jpeg')
+    cam = cv2.cvtColor(cam, cv2.COLOR_BGR2GRAY)
+    
+    R = cv2.getRotationMatrix2D((cam.shape[1] // 2, cam.shape[0] // 2), 90 + np.rad2deg(angle), 1)
+    cam = cv2.warpAffine(cam, R, (img.shape[1], img.shape[0]))
 
-        msg2 = Int16MultiArray()
-        # y_min, y_max, x_min, x_max, theta_min, theta_max
-        # y = [0,800], x = [0,1200], theta = [-4,4]
-        msg2.data = [0, 400, 0, 600, -4, 4]
-        dim0 = MultiArrayDimension()
-        dim0.label = 'axes'
-        dim0.size = 3
-        dim0.stride = 6
-        dim1 = MultiArrayDimension()
-        dim1.label = 'bounds'
-        dim1.size = 2
-        dim1.stride = 2
-        msg2.layout.dim = [dim0, dim1]
-        msg2.layout.data_offset = 0
-        self.publisher2.publish(msg2)
-        print(f"Time taken: {time.time() - start_time:.2f} seconds")
+    T = np.float32([[1, 0, dx], [0, 1, dy]])
+    cam = cv2.warpAffine(cam, T, (img.shape[1], img.shape[0]))
 
-def main(args=None):
-    rclpy.init(args=args)
-    pixelator = Pixelator()
-    rclpy.spin(pixelator)
-    pixelator.destroy_node()
-    rclpy.shutdown()
+    # Normalize activation map to 0-255 and convert to uint8 if needed
+    if cam.dtype != np.uint8:
+        cam_norm = cv2.normalize(cam, None, 0, 255, cv2.NORM_MINMAX)
+        cam_uint8 = cam_norm.astype(np.uint8)
+    else:
+        cam_uint8 = cam
 
+    # Apply 'jet' colormap to activation map
+    cam_color = cv2.applyColorMap(cam_uint8, cv2.COLORMAP_JET)
+
+    # Blend images (alpha=0.5 for overlay)
+    alpha = 0.5
+    overlay = cv2.addWeighted(img, 1 - alpha, cam_color, alpha, 0)
+
+
+    print("dx = " + str(dx) + " dy = " + str(dy) + " theta = " + str(angle))
+    # Display the result
+    cv2.imshow('Superimposed', overlay)
+    cv2.waitKey(0)

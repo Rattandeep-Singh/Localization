@@ -1,0 +1,5 @@
+std_msgs/Int16MultiArray points
+std_msgs/Int16MultiArray bounds
+---
+std_msgs/Int16MultiArray position
+std_msgs/Float32 rotation
